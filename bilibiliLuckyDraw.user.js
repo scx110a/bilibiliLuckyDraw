@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         你B抽奖
 // @namespace
-// @version      0.4
+// @version      0.5
 // @description  抽个奖而已，为啥一定要电磁力呢
 // @author       Cait
 // @match        https://t.bilibili.com/*
@@ -122,6 +122,8 @@
         userList = lastUserList.slice(0, lastUserList.length);
         uidList = lastUidList.slice(0, lastUidList.length);
         isFans = lastIsFans.slice(0, lastUidList.length);
+        devilDrawAction.style.display = "none";
+        randomKillLink.style.display = "none";
         if (confirm("要不要限定自己的粉丝？")) {
             for (var i = isFans.length; i > 0; i--) {
                 if (!isFans[i - 1]) {
@@ -132,11 +134,16 @@
             }
         }
         alert("等待抽奖的人数为"+uidList.length+"。");
-        var numbers = Number(prompt("抽几个？", "1"));
         var winners = "获奖UID/用户名：";
         var links = "";
+        var numbers = Number(prompt("抽几个？", "1"));
+        if (numbers <=0){
+            drawPanel.style.display = "none";
+            return;
+        }
         if (numbers > uidList.length) {
             alert("太多了，没那么多人转。");
+            drawPanel.style.display = "none";
         } else {
             for (var i = 0; i < numbers; i++) {
                 var rndIndex = Math.floor(Math.random() * uidList.length);
@@ -169,8 +176,6 @@
         }
     }
     function devildraw() {
-        devilDrawAction.style.display = "";
-        randomKillLink.style.display = "";
         userList = lastUserList.slice(0, lastUserList.length);
         uidList = lastUidList.slice(0, lastUidList.length);
         isFans = lastIsFans.slice(0, lastUidList.length);
@@ -185,6 +190,17 @@
         }
         alert("等待抽奖的人数为"+uidList.length+"。");
         devilDrawNum = Number(prompt("抽几个？", "1"));
+        if (numbers <=0){
+            drawPanel.style.display = "none";
+            return;
+        }
+        if (devilDrawNum > uidList.length) {
+            alert("太多了，没那么多人转。");
+            drawPanel.style.display = "none";
+            return;
+        }
+        devilDrawAction.style.display = "";
+        randomKillLink.style.display = "";
         refreshListDiv();
         drawPanel.style.display = ""
     }
