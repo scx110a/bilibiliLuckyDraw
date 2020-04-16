@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         你B抽奖
 // @namespace
-// @version      0.3
+// @version      0.4
 // @description  抽个奖而已，为啥一定要电磁力呢
 // @author       Cait
 // @match        https://t.bilibili.com/*
