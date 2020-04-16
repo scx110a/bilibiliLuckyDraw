@@ -137,7 +137,7 @@
         var winners = "获奖UID/用户名：";
         var links = "";
         var numbers = Number(prompt("抽几个？", "1"));
-        if (numbers <=0){
+        if (numbers <= 0){
             drawPanel.style.display = "none";
             return;
         }
@@ -190,7 +190,7 @@
         }
         alert("等待抽奖的人数为"+uidList.length+"。");
         devilDrawNum = Number(prompt("抽几个？", "1"));
-        if (numbers <=0){
+        if (devilDrawNum <= 0 ){
             drawPanel.style.display = "none";
             return;
         }
