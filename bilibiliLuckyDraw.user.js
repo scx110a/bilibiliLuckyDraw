@@ -6,6 +6,8 @@
 // @author       Cait
 // @match        https://t.bilibili.com/*
 // @grant        none
+// @updateURL         https://github.com/scx110a/bilibiliLuckyDraw/raw/master/bilibiliLuckyDraw.user.js
+// @downloadURL       https://github.com/scx110a/bilibiliLuckyDraw/raw/master/bilibiliLuckyDraw.user.js
 // ==/UserScript==
 
 (function () {
