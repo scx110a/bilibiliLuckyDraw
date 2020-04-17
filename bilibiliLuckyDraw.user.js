@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         你B抽奖
 // @namespace
-// @version      0.5
+// @version      0.7
 // @description  抽个奖而已，为啥一定要电磁力呢
 // @author       Cait
 // @match        https://t.bilibili.com/*
@@ -16,10 +16,11 @@
     var tid = window.location.href.toString().split("//")[1].split("/")[1].split("?")[0];
     if (Number(tid) <= 0) { return; }
     var api_url = "https://api.vc.bilibili.com/dynamic_repost/v1/dynamic_repost/repost_detail"
+    var relation_api = "https://api.bilibili.com/x/space/acc/relation?jsonp=jsonp&mid="
     var userList = [], uidList = [], lastUserList = [], lastUidList = [], isFans = [], lastIsFans = [];
     var totalCount = 0;
     var csvString = "UID,用户,是否粉丝";
-    var drawPanel, listDiv, redrawLink, devilDrawAction, devilDrawNum, devildrawLink, randomKillLink;
+    var drawPanel, listDiv, redrawLink, devilDrawAction, devilDrawNum, devildrawLink, randomKillLink, syncFollow;
     var tData = { userList: [], uidList: [], isFans: [] };
     var storageData = { global: { ver: 1 } };
     if (tid !== "") {
@@ -102,6 +103,8 @@
                     redrawLink.style.backgroundColor = "#f25d8e";
                     devildrawLink.disabled = false;
                     devildrawLink.style.backgroundColor = "#f25d8e";
+                    syncFollow.disabled = false;
+                    syncFollow.style.backgroundColor = "#f25d8e";
                 }
             };
             reader.readAsText(event.target.files[0]);
@@ -117,6 +120,63 @@
         deleteSave.onclick = function () { if(confirm("你真的真的确定吗？没有保存存档的话数据就永远没了哦。")){localStorage.clear(); alert("删除完成");}}
         deleteSave.innerText = "删除存档";
         floatdiv.appendChild(deleteSave);
+        syncFollow = document.createElement("button");
+        syncFollow.style = "  background-color: gray; border-radius: 23px; color: white; width: 84px; height: 32px; text-align: center; text-decoration: none; display: inline-block; font-size: 16px;"
+        syncFollow.onclick = function () {
+            syncFans(0);
+            console.log("total sync:" + lastUidList.length);
+        }
+        syncFollow.innerText = "同步粉丝";
+        syncFollow.disabled = true;
+        floatdiv.appendChild(syncFollow);
+    }
+    function syncFans(index){
+        if(!index){
+            index = 0;
+        }
+        var xhttp = new XMLHttpRequest();
+        xhttp.responseType = "json";
+        xhttp.withCredentials = true;
+        xhttp.onreadystatechange = function () {
+            if (xhttp.readyState == 4 && xhttp.status == 200) {
+                try {
+                    var recv = xhttp.response;
+                    if(recv.data.be_relation.attribute >= 2){
+                        lastIsFans[index] = true;
+                    }else{
+                        lastIsFans[index] = false;
+                    }
+                    console.log("now sync index:" + index + ", result:" + lastIsFans[index]);
+                    if(index + 1 < lastUidList.length){
+                        syncFans(index + 1);
+                    } else {
+                        alert("同步结束");
+                        tData.uidList = lastUidList;
+                        tData.userList = lastUserList;
+                        tData.isFans = lastIsFans;
+                        storageData[tid] = tData;
+                        localStorage.setItem("drawStorage", JSON.stringify(storageData));
+                    }
+                } catch (e) {
+                    alert("不知为何发生了点错误……");
+                    console.log(e);
+                }
+            } else if (xhttp.readyState == 4 && xhttp.status != 200) {
+                alert("不知为何发生了点错误……");
+            }
+        }
+        xhttp.onerror = function (e) {
+            alert("不知为何发生了点错误……");
+            console.log(e);
+        };
+        try {
+            xhttp.open("GET", relation_api + lastUidList[index], true);
+            xhttp.setRequestHeader("Content-type", "application/json");
+            xhttp.send();
+        } catch (exception) {
+            alert("不知为何发生了点错误……");
+            console.log(exception);
+        }
     }
     function redraw() {
         userList = lastUserList.slice(0, lastUserList.length);
@@ -337,6 +397,8 @@
         redrawLink.style.backgroundColor = "#f25d8e";
         devildrawLink.disabled = false;
         devildrawLink.style.backgroundColor = "#f25d8e";
+        syncFollow.disabled = false;
+        syncFollow.style.backgroundColor = "#f25d8e";
         if (confirm("下载转发列表？")) {
             var csvContent = "\ufeff";
             for(var i=0;i<uidList.length;i++){
