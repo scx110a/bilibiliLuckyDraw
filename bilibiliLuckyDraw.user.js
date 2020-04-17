@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         你B抽奖
 // @namespace
-// @version      0.7
+// @version      0.9
 // @description  抽个奖而已，为啥一定要电磁力呢
 // @author       Cait
 // @match        https://t.bilibili.com/*
@@ -20,8 +20,9 @@
     var userList = [], uidList = [], lastUserList = [], lastUidList = [], isFans = [], lastIsFans = [];
     var totalCount = 0;
     var csvString = "UID,用户,是否粉丝";
-    var drawPanel, listDiv, redrawLink, devilDrawAction, devilDrawNum, devildrawLink, randomKillLink, syncFollow;
+    var drawPanel, listDiv, redrawLink, devilDrawAction, devilDrawNum, devildrawLink, randomKillLink, syncFollow, infoPanel, infoText;
     var tData = { userList: [], uidList: [], isFans: [] };
+    var dirtyUidList = [];
     var storageData = { global: { ver: 1 } };
     if (tid !== "") {
         setTimeout(addDrawLink, 5000);
@@ -36,9 +37,15 @@
         floatdiv.appendChild(drawLink);
         document.body.appendChild(floatdiv);
         drawPanel = document.createElement("div");
-        drawPanel.style = "z-index: 9998; position: fixed ! important; margin:auto; left: 0; top: 0; right:0; bottom:0; height: 500px; width: 500px; overflow: auto; background-color: pink; padding: 20px 20px 20px 20px;"
+        drawPanel.style = "z-index: 9997; position: fixed ! important; margin:auto; left: 0; top: 0; right:0; bottom:0; height: 500px; width: 500px; overflow: auto; background-color: pink; padding: 20px 20px 20px 20px;"
         drawPanel.style.display = "none";
         document.body.appendChild(drawPanel);
+        infoPanel = document.createElement("div");
+        infoPanel.style = "z-index: 9998; position: fixed ! important; margin:auto; left: 0; top: 0; right:0; bottom:0; height: 100px; width: 300px; overflow: auto; background-color: yellow; padding: 20px 20px 20px 20px;"
+        infoPanel.style.display = "none";
+        document.body.appendChild(infoPanel);
+        infoText = document.createElement("div");
+        infoPanel.appendChild(infoText);
         listDiv = document.createElement("div");
         drawPanel.appendChild(listDiv);
         devilDrawAction = document.createElement("button");
@@ -70,6 +77,32 @@
         devildrawLink.innerText = "灭霸抽奖";
         devildrawLink.disabled = true;
         floatdiv.appendChild(devildrawLink);
+        var loadSave = document.createElement("button");
+        loadSave.style = "background-color: #f25d8e; border-radius: 23px; color: white; width: 84px; height: 32px; text-align: center; text-decoration: none; font-size: 16px;"
+        loadSave.onclick = function () {
+            var syncDataStorage = JSON.parse(localStorage.getItem("drawStorage"));
+            if (syncDataStorage) {
+                var syncData = syncDataStorage[tid];
+                if (syncData) {
+                    lastUserList = syncData.userList;
+                    lastUidList = syncData.uidList;
+                    lastIsFans = syncData.isFans;
+                    redrawLink.disabled = false;
+                    redrawLink.style.backgroundColor = "#f25d8e";
+                    devildrawLink.disabled = false;
+                    devildrawLink.style.backgroundColor = "#f25d8e";
+                    syncFollow.disabled = false;
+                    syncFollow.style.backgroundColor = "#f25d8e";
+                    alert("加载完成。");
+                } else {
+                    alert("这个动态里没有找到存档。");
+                }
+            } else {
+                alert("没有找到任何存档。");
+            }
+        }
+        loadSave.innerText = "读取存档";
+        floatdiv.appendChild(loadSave);
         var br = document.createElement("br");
         floatdiv.appendChild(br);
         var exportSave = document.createElement("button");
@@ -85,14 +118,14 @@
         exportSave.innerText = "导出存档";
         floatdiv.appendChild(exportSave);
         var filePicker = document.createElement("input");
-        filePicker.type="file";
-        filePicker.style.display="none";
-        filePicker.onchange = function(event){
+        filePicker.type = "file";
+        filePicker.style.display = "none";
+        filePicker.onchange = function (event) {
             var reader = new FileReader();
-            reader.onload = function(e){
+            reader.onload = function (e) {
                 var res = e.target.result;
                 alert("预览：" + res);
-                if(confirm("确定要载入存档？之前的存档会消失。")){
+                if (confirm("确定要载入存档？之前的存档会消失。")) {
                     var loadedData = JSON.parse(res);
                     var syncData = loadedData[tid];
                     localStorage.setItem("drawStorage", res);
@@ -117,24 +150,29 @@
         floatdiv.appendChild(importSave);
         var deleteSave = document.createElement("button");
         deleteSave.style = "  background-color: #f25d8e; border-radius: 23px; color: white; width: 84px; height: 32px; text-align: center; text-decoration: none; display: inline-block; font-size: 16px;"
-        deleteSave.onclick = function () { if(confirm("你真的真的确定吗？没有保存存档的话数据就永远没了哦。")){localStorage.clear(); alert("删除完成");}}
+        deleteSave.onclick = function () { if (confirm("你真的真的确定吗？没有保存存档的话数据就永远没了哦。")) { localStorage.clear(); alert("删除完成"); } }
         deleteSave.innerText = "删除存档";
         floatdiv.appendChild(deleteSave);
         syncFollow = document.createElement("button");
         syncFollow.style = "  background-color: gray; border-radius: 23px; color: white; width: 84px; height: 32px; text-align: center; text-decoration: none; display: inline-block; font-size: 16px;"
         syncFollow.onclick = function () {
-            alert("同步关注状态会花很长时间，请耐心等待。浏览器的控制台里可以看到进度。");
-            syncFans(0);
-            console.log("total sync:" + lastUidList.length);
+            alert("同步会花费一定时间，同时会完成一次抽奖准备，请耐心等待。");
+            infoText.innerText = "正在进行快速同步……页面位置：0";
+            infoPanel.style.display = "";
+            dirtyUidList = lastUidList.slice(0, lastUidList.length);
+            syncFansQuick();
         }
         syncFollow.innerText = "同步粉丝";
         syncFollow.disabled = true;
         floatdiv.appendChild(syncFollow);
     }
-    function syncFans(index){
-        if(!index){
-            index = 0;
+
+    function syncFansQuick(offset) {
+        var queryString = "dynamic_id=" + tid;
+        if (offset) {
+            queryString = queryString + "&offset=" + offset;
         }
+        var finalUrl = api_url + "?" + queryString;
         var xhttp = new XMLHttpRequest();
         xhttp.responseType = "json";
         xhttp.withCredentials = true;
@@ -142,16 +180,98 @@
             if (xhttp.readyState == 4 && xhttp.status == 200) {
                 try {
                     var recv = xhttp.response;
-                    if(recv.data.be_relation.attribute >= 2){
-                        lastIsFans[index] = true;
-                    }else{
-                        lastIsFans[index] = false;
+                    var nextOffset = recv.data.offset;
+                    var items = Array.from(recv.data.items);
+                    items.forEach(element => {
+                        var idx = lastUidList.indexOf(element.desc.uid);
+                        if (idx == -1) {
+                            if (element.display.relation) {
+                                var fansTemp;
+                                if (element.display.relation.is_followed == 1) {
+                                    fansTemp = true;
+                                } else {
+                                    fansTemp = false;
+                                }
+                                lastUidList.push(element.desc.uid);
+                                lastUserList.push(element.desc.user_profile.info.uname);
+                                lastIsFans.push(fansTemp);
+                            }
+                        } else {
+                            if (element.display.relation) {
+                                var fansTemp;
+                                if (element.display.relation.is_followed == 1) {
+                                    fansTemp = true;
+                                } else {
+                                    fansTemp = false;
+                                }
+                                lastIsFans[idx] = fansTemp;
+                                dirtyUidList.splice(dirtyUidList.indexOf(element.desc.uid), 1);
+                            }
+                        }
+                    });
+                    if (recv.data.has_more !== 1) {
+                        infoText.innerText = "快速同步已完成。无法快速同步的列表长度：" + dirtyUidList.length;
+                        if(dirtyUidList.length > 0){
+                            syncFans(0);
+                        }else {
+                            infoPanel.style.display = "none";
+                            alert("同步结束");
+                            tData.uidList = lastUidList;
+                            tData.userList = lastUserList;
+                            tData.isFans = lastIsFans;
+                            storageData[tid] = tData;
+                            localStorage.setItem("drawStorage", JSON.stringify(storageData));
+                        }
+                    } else {
+                        infoText.innerText = "正在进行快速同步……页面位置：" + nextOffset;
+                        syncFansQuick(nextOffset);
                     }
-                    console.log("now sync index:" + index + ", result:" + lastIsFans[index]);
-                    if(index + 1 < lastUidList.length){
+                } catch (e) {
+                    infoPanel.style.display = "none";
+                    alert("不知为何发生了点错误……");
+                    console.log(e);
+                }
+            } else if (xhttp.readyState == 4 && xhttp.status != 200) {
+                infoPanel.style.display = "none";
+                alert("不知为何发生了点错误……");
+            }
+        }
+        xhttp.onerror = function (e) {
+            infoPanel.style.display = "none";
+            alert("不知为何发生了点错误……");
+            console.log(e);
+        };
+        try {
+            xhttp.open("GET", finalUrl, true);
+            xhttp.setRequestHeader("Content-type", "application/json");
+            xhttp.send();
+        } catch (exception) {
+            infoPanel.style.display = "none";
+            alert("不知为何发生了点错误……");
+            console.log(exception);
+        }
+    }
+
+    function syncFans(index) {
+        var rIndex = lastUidList.indexOf(dirtyUidList[index]);
+        var xhttp = new XMLHttpRequest();
+        xhttp.responseType = "json";
+        xhttp.withCredentials = true;
+        xhttp.onreadystatechange = function () {
+            if (xhttp.readyState == 4 && xhttp.status == 200) {
+                try {
+                    var recv = xhttp.response;
+                    if (recv.data.be_relation.attribute >= 2) {
+                        lastIsFans[rIndex] = true;
+                    } else {
+                        lastIsFans[rIndex] = false;
+                    }
+                    infoText.innerText = "正在同步慢速列表第" + (index + 1) + "项，总计" + dirtyUidList.length + "项。当前UID:" + lastUidList[rIndex] + "，服务器返回结果:" + lastIsFans[rIndex];
+                    if (index + 1 < dirtyUidList.length) {
                         syncFans(index + 1);
                     } else {
-                        alert("同步结束");
+                        infoText.innerText = "同步结束";
+                        setTimeout(function(){infoPanel.style.display = "none";}, 3000);
                         tData.uidList = lastUidList;
                         tData.userList = lastUserList;
                         tData.isFans = lastIsFans;
@@ -159,26 +279,31 @@
                         localStorage.setItem("drawStorage", JSON.stringify(storageData));
                     }
                 } catch (e) {
+                    infoPanel.style.display = "none";
                     alert("不知为何发生了点错误……");
                     console.log(e);
                 }
             } else if (xhttp.readyState == 4 && xhttp.status != 200) {
+                infoPanel.style.display = "none";
                 alert("不知为何发生了点错误……");
             }
         }
         xhttp.onerror = function (e) {
+            infoPanel.style.display = "none";
             alert("不知为何发生了点错误……");
             console.log(e);
         };
         try {
-            xhttp.open("GET", relation_api + lastUidList[index], true);
+            xhttp.open("GET", relation_api + lastUidList[rIndex], true);
             xhttp.setRequestHeader("Content-type", "application/json");
             xhttp.send();
         } catch (exception) {
+            infoPanel.style.display = "none";
             alert("不知为何发生了点错误……");
             console.log(exception);
         }
     }
+
     function redraw() {
         userList = lastUserList.slice(0, lastUserList.length);
         uidList = lastUidList.slice(0, lastUidList.length);
@@ -194,11 +319,11 @@
                 }
             }
         }
-        alert("等待抽奖的人数为"+uidList.length+"。");
+        alert("等待抽奖的人数为" + uidList.length + "。");
         var winners = "获奖UID/用户名：";
         var links = "";
         var numbers = Number(prompt("抽几个？", "1"));
-        if (numbers <= 0){
+        if (numbers <= 0) {
             drawPanel.style.display = "none";
             return;
         }
@@ -249,9 +374,9 @@
                 }
             }
         }
-        alert("等待抽奖的人数为"+uidList.length+"。");
+        alert("等待抽奖的人数为" + uidList.length + "。");
         devilDrawNum = Number(prompt("抽几个？", "1"));
-        if (devilDrawNum <= 0 ){
+        if (devilDrawNum <= 0) {
             drawPanel.style.display = "none";
             return;
         }
@@ -384,8 +509,8 @@
         }
     }
     function finalDraw() {
-        alert("转发列表获取完成了，去重以后大概有" + uidList.length + "个人参与抽奖，总计获取到"+totalCount+"个数据。");
-        console.log(totalCount);
+        alert("转发列表获取完成了，去重以后大概有" + uidList.length + "个人参与抽奖，总计获取到" + totalCount + "个数据。");
+        totalCount = 0;
         lastUidList = uidList.slice(0, uidList.length);
         lastUserList = userList.slice(0, userList.length);
         lastIsFans = isFans.slice(0, isFans.length);
@@ -402,7 +527,7 @@
         syncFollow.style.backgroundColor = "#f25d8e";
         if (confirm("下载转发列表？")) {
             var csvContent = "\ufeff";
-            for(var i=0;i<uidList.length;i++){
+            for (var i = 0; i < uidList.length; i++) {
                 csvString = csvString + "\n" + uidList[i] + "," + userList[i] + "," + isFans[i];
             }
             csvContent = csvContent + csvString;
