@@ -123,6 +123,7 @@
         syncFollow = document.createElement("button");
         syncFollow.style = "  background-color: gray; border-radius: 23px; color: white; width: 84px; height: 32px; text-align: center; text-decoration: none; display: inline-block; font-size: 16px;"
         syncFollow.onclick = function () {
+            alert("同步关注状态会花很长时间，请耐心等待。浏览器的控制台里可以看到进度。");
             syncFans(0);
             console.log("total sync:" + lastUidList.length);
         }
