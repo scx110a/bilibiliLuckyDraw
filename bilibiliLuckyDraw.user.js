@@ -63,7 +63,7 @@
         drawPanel.appendChild(randomKillLink);
         var closePanel = document.createElement("button");
         closePanel.innerText = "关闭";
-        closePanel.onclick = function () { drawPanel.style.display = "none"; devilDrawAction.style.display = "none"; randomKillLink.style.display = "none"; if(downloadUrl !== null){URL.revokeObjectURL(downloadUrl); downloadUrl=null;}}
+        closePanel.onclick = function () { listDiv.innerHTML="";drawPanel.style.display = "none"; devilDrawAction.style.display = "none"; randomKillLink.style.display = "none"; if(downloadUrl !== null){URL.revokeObjectURL(downloadUrl); downloadUrl=null;}}
         closePanel.style = "background-color: #f25d8e; border-radius: 23px; color: white; width: 84px; height: 32px; text-align: center; text-decoration: none; font-size: 16px;"
         drawPanel.appendChild(closePanel);
         redrawLink = document.createElement("button");
@@ -110,6 +110,7 @@
         exportSave.style = "  background-color: #f25d8e; border-radius: 23px; color: white; width: 84px; height: 32px; text-align: center; text-decoration: none; display: inline-block; font-size: 16px;"
         exportSave.onclick = function () {
             if(downloadUrl !== null){URL.revokeObjectURL(downloadUrl);downloadUrl=null;}
+            listDiv.innerHTML="";
             var save = localStorage.getItem("drawStorage");
             var blob = new Blob(["\ufeff"+save], { type: 'text/json;' });
             var link = document.createElement("a");
@@ -533,6 +534,7 @@
         syncFollow.style.backgroundColor = "#f25d8e";
         if (confirm("下载转发列表？")) {
             if(downloadUrl !== null){URL.revokeObjectURL(downloadUrl);downloadUrl=null;}
+            listDiv.innerHTML="";
             var csvContent = "\ufeff";
             for (var i = 0; i < uidList.length; i++) {
                 csvString = csvString + "\n" + uidList[i] + "," + userList[i] + "," + isFans[i];
