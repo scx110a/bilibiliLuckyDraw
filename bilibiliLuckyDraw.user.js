@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         你B抽奖
 // @namespace
-// @version      0.9
+// @version      1.0
 // @description  抽个奖而已，为啥一定要电磁力呢
 // @author       Cait
 // @match        https://t.bilibili.com/*
@@ -22,6 +22,7 @@
     var csvString = "UID,用户,是否粉丝";
     var drawPanel, listDiv, redrawLink, devilDrawAction, devilDrawNum, devildrawLink, randomKillLink, syncFollow, infoPanel, infoText;
     var tData = { userList: [], uidList: [], isFans: [] };
+    var downloadUrl=null;
     var dirtyUidList = [];
     var storageData = { global: { ver: 1 } };
     if (tid !== "") {
@@ -62,7 +63,7 @@
         drawPanel.appendChild(randomKillLink);
         var closePanel = document.createElement("button");
         closePanel.innerText = "关闭";
-        closePanel.onclick = function () { drawPanel.style.display = "none"; devilDrawAction.style.display = "none"; randomKillLink.style.display = "none"; }
+        closePanel.onclick = function () { drawPanel.style.display = "none"; devilDrawAction.style.display = "none"; randomKillLink.style.display = "none"; if(downloadUrl !== null){URL.revokeObjectURL(downloadUrl); downloadUrl=null;}}
         closePanel.style = "background-color: #f25d8e; border-radius: 23px; color: white; width: 84px; height: 32px; text-align: center; text-decoration: none; font-size: 16px;"
         drawPanel.appendChild(closePanel);
         redrawLink = document.createElement("button");
@@ -108,12 +109,16 @@
         var exportSave = document.createElement("button");
         exportSave.style = "  background-color: #f25d8e; border-radius: 23px; color: white; width: 84px; height: 32px; text-align: center; text-decoration: none; display: inline-block; font-size: 16px;"
         exportSave.onclick = function () {
+            if(downloadUrl !== null){URL.revokeObjectURL(downloadUrl);downloadUrl=null;}
             var save = localStorage.getItem("drawStorage");
-            var blob = new Blob([save], { type: 'text/json;' });
+            var blob = new Blob([save], { type: 'application/json;' });
             var link = document.createElement("a");
-            link.setAttribute("href", URL.createObjectURL(blob));
+            downloadUrl = URL.createObjectURL(blob);
+            link.setAttribute("target","_blank");
+            link.setAttribute("href", downloadUrl);
+            link.innerText = "保存存档（iOS请长按选择在新标签打开）";
             link.setAttribute("download", "save.json");
-            document.body.appendChild(link); link.click();
+            listDiv.appendChild(link); drawPanel.style.display = "";
         }
         exportSave.innerText = "导出存档";
         floatdiv.appendChild(exportSave);
@@ -390,6 +395,7 @@
         refreshListDiv();
         drawPanel.style.display = ""
     }
+
     function devilDrawAct() {
         var finalAct = false;
         var numbers = Math.floor(uidList.length / 2);
@@ -526,16 +532,20 @@
         syncFollow.disabled = false;
         syncFollow.style.backgroundColor = "#f25d8e";
         if (confirm("下载转发列表？")) {
+            if(downloadUrl !== null){URL.revokeObjectURL(downloadUrl);downloadUrl=null;}
             var csvContent = "\ufeff";
             for (var i = 0; i < uidList.length; i++) {
                 csvString = csvString + "\n" + uidList[i] + "," + userList[i] + "," + isFans[i];
             }
             csvContent = csvContent + csvString;
             var blob = new Blob([csvContent], { type: 'text/csv;charset=gb2312;' });
+            downloadUrl = URL.createObjectURL(blob);
             var link = document.createElement("a");
-            link.setAttribute("href", URL.createObjectURL(blob));
+            link.setAttribute("target","_blank");
+            link.setAttribute("href", downloadUrl);
+            link.innerText = "保存档案（iOS请长按选择在新标签打开）";
             link.setAttribute("download", "drawlist.csv");
-            document.body.appendChild(link); link.click();
+            listDiv.appendChild(link); drawPanel.style.display = "";
         }
         csvString = "UID,用户,是否粉丝";
         alert("准备完成了。");
