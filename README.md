@@ -26,4 +26,4 @@
 
 ## 特别：iOS上的使用
 
-iOS有部分浏览器也是支持的，比如Alook（其他浏览器可以参考Alook类似的方法，具体参照软件说明）。在Alook上，你可以把bilibiliLuckyDraw.user.js的所有内容先复制下来，然后打开Alook的 设置->自定义设置->JavaScript扩展，然后点击右上角的+，新建一个被动扩展。名称随意写，匹配类型为域名，匹配值填写t.bilibili.com。运行时间保持默认即可，最后在JavaScript代码里粘贴复制下来的代码，存储就可以了。
+iOS有部分浏览器也是支持的，比如Alook（其他浏览器可以参考Alook类似的方法，具体参照软件说明）。在Alook上，你可以把bilibiliLuckyDraw.user.js的所有内容先复制下来，然后打开Alook的 设置->自定义设置->JavaScript扩展，然后点击右上角的+，新建一个被动扩展。名称随意写，匹配类型为域名，匹配值填写t.bilibili.com。运行时间保持默认即可，最后在JavaScript代码里粘贴复制下来的代码，存储就可以了。注意：iOS可能不支持存档的导出功能，目前不清楚是浏览器限制还是别的什么，之后会看看的。
