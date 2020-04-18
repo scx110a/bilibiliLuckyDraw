@@ -111,7 +111,7 @@
         exportSave.onclick = function () {
             if(downloadUrl !== null){URL.revokeObjectURL(downloadUrl);downloadUrl=null;}
             var save = localStorage.getItem("drawStorage");
-            var blob = new Blob([save], { type: 'application/json;' });
+            var blob = new Blob([save], { type: 'text/json;' });
             var link = document.createElement("a");
             downloadUrl = URL.createObjectURL(blob);
             link.setAttribute("target","_blank");
