@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         你B抽奖
 // @namespace
-// @version      1.0
+// @version      1.1
 // @description  抽个奖而已，为啥一定要电磁力呢
 // @author       Cait
 // @match        https://t.bilibili.com/*
@@ -13,11 +13,13 @@
 (function () {
     'use strict';
     if (window.location !== window.parent.location) { return; }
-    var tid = window.location.href.toString().split("//")[1].split("/")[1].split("?")[0];
+    var tid = window.location.href.toString().split("//")[1].split("/")[1].split("?")[0].split("#")[0];
     if (Number(tid) <= 0) { return; }
     var api_url = "https://api.vc.bilibili.com/dynamic_repost/v1/dynamic_repost/repost_detail"
     var relation_api = "https://api.bilibili.com/x/space/acc/relation?jsonp=jsonp&mid="
-    var userList = [], uidList = [], lastUserList = [], lastUidList = [], isFans = [], lastIsFans = [];
+    var activity_api = "https://api.vc.bilibili.com/dynamic_svr/v1/dynamic_svr/space_history?visitor_uid=165885&offset_dynamic_id=0&need_top=1&host_uid="
+    var userList = [], uidList = [], lastUserList = [], lastUidList = [], isFans = [], isTrash = [], lastIsFans = [];
+    var trashUser = [];
     var totalCount = 0;
     var csvString = "UID,用户,是否粉丝";
     var drawPanel, listDiv, redrawLink, devilDrawAction, devilDrawNum, devildrawLink, randomKillLink, syncFollow, infoPanel, infoText;
@@ -171,6 +173,17 @@
         syncFollow.innerText = "同步粉丝";
         syncFollow.disabled = true;
         floatdiv.appendChild(syncFollow);
+        var syncTrash = document.createElement("button");
+        syncTrash.style = "  background-color: #f25d8e; border-radius: 23px; color: white; width: 84px; height: 32px; text-align: center; text-decoration: none; display: inline-block; font-size: 16px;"
+        syncTrash.onclick = function () {
+            alert("同步会花费一定时间，请耐心等待。");
+            infoText.innerText = "正在进行同步……当前位置：0";
+            infoPanel.style.display = "";
+            syncTrashUser();
+        }
+        syncTrash.innerText = "同步抽奖号";
+        syncTrash.disabled = false;
+        floatdiv.appendChild(syncTrash);
     }
 
     function syncFansQuick(offset) {
@@ -258,6 +271,81 @@
         }
     }
 
+    function fetchUserActivity(index, regex, callback) {
+        let uid = uidList[index];
+        var xhttp = new XMLHttpRequest();
+        xhttp.responseType = "json";
+        xhttp.withCredentials = true;
+        xhttp.onreadystatechange = function () {
+            if (xhttp.readyState == 4 && xhttp.status == 200) {
+                try {
+                    var cards = xhttp.response.data.cards;
+                    let activityList = [];
+                    let matchCount = 0;
+                    cards.forEach(val => {
+                        let levelOne = JSON.parse(val.card);
+                        if(levelOne.origin){
+                            let actitem = JSON.parse(levelOne.origin);
+                            if(actitem && actitem.item && actitem.item.description){
+                                let activityDetail = actitem.item.description;
+                                if(regex && activityDetail.match(regex)){
+                                    matchCount++;
+                                }
+                                activityList.push(activityDetail);
+                            }
+                        }
+                    });
+                    callback.call(this, index + 1, matchCount, activityList);
+                } catch (e) {
+                    infoPanel.style.display = "none";
+                    alert("不知为何发生了点错误……");
+                    console.log(e);
+                }
+            } else if (xhttp.readyState == 4 && xhttp.status != 200) {
+                infoPanel.style.display = "none";
+                alert("不知为何发生了点错误……");
+            }
+        }
+        xhttp.onerror = function (e) {
+            infoPanel.style.display = "none";
+            alert("不知为何发生了点错误……");
+            console.log(e);
+        };
+        try {
+            xhttp.open("GET", activity_api + uid, true);
+            xhttp.setRequestHeader("Content-type", "application/json");
+            xhttp.send();
+        } catch (exception) {
+            infoPanel.style.display = "none";
+            alert("不知为何发生了点错误……");
+            console.log(exception);
+        }
+    }
+
+    function syncTrashUser(fetchIndex, count) {
+        if(!fetchIndex){
+            fetchIndex = 0;
+        }else {
+            if(!count){
+                count = 0;
+            }
+            isTrash[fetchIndex - 1] = count;
+             if(count > 6) trashUser.push(userList[fetchIndex - 1]);
+        }
+        if(fetchIndex >= uidList.length){
+            infoText.innerText = "同步结束";
+            setTimeout(function(){infoPanel.style.display = "none";}, 3000);
+            if(trashUser.length > 0){
+                alert("以下用户将会在抽奖号过滤中被过滤：" + trashUser.join(","));
+            }
+            //console.log(userList, isTrash);
+            //console.log(trashUser);
+            return;
+        }
+        infoText.innerText = "正在进行同步……当前位置：" + fetchIndex;
+        fetchUserActivity(fetchIndex, /抽奖/, syncTrashUser);
+    }
+
     function syncFans(index) {
         var rIndex = lastUidList.indexOf(dirtyUidList[index]);
         var xhttp = new XMLHttpRequest();
@@ -322,6 +410,21 @@
                     isFans.splice(i - 1, 1);
                     uidList.splice(i - 1, 1);
                     userList.splice(i - 1, 1);
+                    if(isTrash.length > 0){
+                        isTrash.splice(i - 1, 1);
+                    }
+                }
+            }
+        }
+        if (isTrash.length > 0 && confirm("要不要拒绝抽奖号？")) {
+            for (var i = isTrash.length; i > 0; i--) {
+                if (isTrash[i - 1] > 6) {
+                    isFans.splice(i - 1, 1);
+                    uidList.splice(i - 1, 1);
+                    userList.splice(i - 1, 1);
+                    if(isTrash.length > 0){
+                        isTrash.splice(i - 1, 1);
+                    }
                 }
             }
         }
@@ -377,6 +480,18 @@
                     isFans.splice(i - 1, 1);
                     uidList.splice(i - 1, 1);
                     userList.splice(i - 1, 1);
+                }
+            }
+        }
+        if (isTrash.length > 0 && confirm("要不要拒绝抽奖号？")) {
+            for (var i = isTrash.length; i > 0; i--) {
+                if (isTrash[i - 1] > 6) {
+                    isFans.splice(i - 1, 1);
+                    uidList.splice(i - 1, 1);
+                    userList.splice(i - 1, 1);
+                    if(isTrash.length > 0){
+                        isTrash.splice(i - 1, 1);
+                    }
                 }
             }
         }
@@ -458,6 +573,7 @@
         }
         getNextForwardList();
     }
+
     function getNextForwardList(offset) {
         var queryString = "dynamic_id=" + tid;
         if (offset) {
