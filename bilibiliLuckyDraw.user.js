@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         你B抽奖
 // @namespace
-// @version      1.1
+// @version      1.2
 // @description  抽个奖而已，为啥一定要电磁力呢
 // @author       Cait
 // @match        https://t.bilibili.com/*
@@ -165,10 +165,10 @@
         syncFollow.style = "  background-color: gray; border-radius: 23px; color: white; width: 84px; height: 32px; text-align: center; text-decoration: none; display: inline-block; font-size: 16px;"
         syncFollow.onclick = function () {
             alert("同步会花费一定时间，同时会完成一次抽奖准备，请耐心等待。");
-            infoText.innerText = "正在进行快速同步……页面位置：0";
+            infoText.innerText = "正在进行同步……页面位置：0";
             infoPanel.style.display = "";
             dirtyUidList = lastUidList.slice(0, lastUidList.length);
-            syncFansQuick();
+            syncFans(0);
         }
         syncFollow.innerText = "同步粉丝";
         syncFollow.disabled = true;
@@ -184,8 +184,17 @@
         syncTrash.innerText = "同步抽奖号";
         syncTrash.disabled = false;
         floatdiv.appendChild(syncTrash);
+        var makeCsvDom = document.createElement("button");
+        makeCsvDom.style = "  background-color: #f25d8e; border-radius: 23px; color: white; width: 84px; height: 32px; text-align: center; text-decoration: none; display: inline-block; font-size: 16px;"
+        makeCsvDom.onclick = function () {
+            makeCsv();
+        }
+        makeCsvDom.innerText = "下载列表";
+        makeCsvDom.disabled = false;
+        floatdiv.appendChild(makeCsvDom);
     }
 
+    /*
     function syncFansQuick(offset) {
         var queryString = "dynamic_id=" + tid;
         if (offset) {
@@ -270,6 +279,7 @@
             console.log(exception);
         }
     }
+    */
 
     function fetchUserActivity(index, regex, callback) {
         let uid = uidList[index];
@@ -355,6 +365,9 @@
             if (xhttp.readyState == 4 && xhttp.status == 200) {
                 try {
                     var recv = xhttp.response;
+                    if(!recv){
+                        return;
+                    }
                     if (recv.data.be_relation.attribute >= 2) {
                         lastIsFans[rIndex] = true;
                     } else {
@@ -404,7 +417,7 @@
         isFans = lastIsFans.slice(0, lastUidList.length);
         devilDrawAction.style.display = "none";
         randomKillLink.style.display = "none";
-        if (confirm("要不要限定自己的粉丝？")) {
+        if (confirm("要不要限定自己的粉丝？需要同步过粉丝才可以使用，否则无法使用！未知状态的会视作是粉丝。")) {
             for (var i = isFans.length; i > 0; i--) {
                 if (!isFans[i - 1]) {
                     isFans.splice(i - 1, 1);
@@ -593,12 +606,7 @@
                         totalCount++;
                         if (uidList.indexOf(element.desc.uid) == -1) {
                             if (element.display.relation) {
-                                var fansTemp;
-                                if (element.display.relation.is_followed == 1) {
-                                    fansTemp = true;
-                                } else {
-                                    fansTemp = false;
-                                }
+                                var fansTemp = "--未知状态--";
                                 uidList.push(element.desc.uid);
                                 userList.push(element.desc.user_profile.info.uname);
                                 isFans.push(fansTemp);
@@ -631,6 +639,7 @@
             console.log(exception);
         }
     }
+
     function finalDraw() {
         alert("转发列表获取完成了，去重以后大概有" + uidList.length + "个人参与抽奖，总计获取到" + totalCount + "个数据。");
         totalCount = 0;
@@ -648,24 +657,29 @@
         devildrawLink.style.backgroundColor = "#f25d8e";
         syncFollow.disabled = false;
         syncFollow.style.backgroundColor = "#f25d8e";
+        if (confirm("是否同时检测是否为自己粉丝？该操作会很慢！")) {
+            dirtyUidList = lastUidList.slice(0, lastUidList.length);
+            syncFans(0);
+        }
         if (confirm("下载转发列表？")) {
-            if(downloadUrl !== null){URL.revokeObjectURL(downloadUrl);downloadUrl=null;}
-            listDiv.innerHTML="";
-            var csvContent = "\ufeff";
-            for (var i = 0; i < uidList.length; i++) {
-                csvString = csvString + "\n" + uidList[i] + "," + userList[i] + "," + isFans[i];
-            }
-            csvContent = csvContent + csvString;
-            var blob = new Blob([csvContent], { type: 'text/csv;charset=gb2312;' });
-            downloadUrl = URL.createObjectURL(blob);
-            var link = document.createElement("a");
-            link.setAttribute("target","_blank");
-            link.setAttribute("href", downloadUrl);
-            link.innerText = "保存档案（iOS请长按选择在新标签打开）";
-            link.setAttribute("download", "drawlist.csv");
-            listDiv.appendChild(link); drawPanel.style.display = "";
+            makeCsv();
         }
         csvString = "UID,用户,是否粉丝";
         alert("准备完成了。");
+    }
+
+    function makeCsv(){
+        var csvContent = "\ufeff";
+        for (var i = 0; i < uidList.length; i++) {
+            csvString = csvString + "\n" + uidList[i] + "," + userList[i] + "," + isFans[i];
+        }
+        csvContent = csvContent + csvString;
+        var blob = new Blob([csvContent], { type: 'text/csv;charset=gb2312;' });
+        downloadUrl = URL.createObjectURL(blob);
+        var link = document.createElement("a");
+        link.href = downloadUrl;
+        link.download = "drawlist.csv";
+        link.click();
+        URL.revokeObjectURL(downloadUrl);
     }
 })();
