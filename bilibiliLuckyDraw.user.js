@@ -605,12 +605,10 @@
                     items.forEach(element => {
                         totalCount++;
                         if (uidList.indexOf(element.desc.uid) == -1) {
-                            if (element.display.relation) {
-                                var fansTemp = "--未知状态--";
-                                uidList.push(element.desc.uid);
-                                userList.push(element.desc.user_profile.info.uname);
-                                isFans.push(fansTemp);
-                            }
+                            var fansTemp = "--未知状态--";
+                            uidList.push(element.desc.uid);
+                            userList.push(element.desc.user_profile.info.uname);
+                            isFans.push(fansTemp);
                         }
                     });
                     if (recv.data.has_more !== 1) {
@@ -669,8 +667,8 @@
     function makeCsv(){
         csvString = "UID,用户,是否粉丝";
         var csvContent = "\ufeff";
-        for (var i = 0; i < uidList.length; i++) {
-            csvString = csvString + "\n" + uidList[i] + "," + userList[i] + "," + isFans[i];
+        for (var i = 0; i < lastUidList.length; i++) {
+            csvString = csvString + "\n" + lastUidList[i] + "," + lastUserList[i] + "," + lastIsFans[i];
         }
         csvContent = csvContent + csvString;
         var blob = new Blob([csvContent], { type: 'text/csv;charset=gb2312;' });
