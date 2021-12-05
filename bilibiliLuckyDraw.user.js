@@ -659,16 +659,15 @@
         syncFollow.style.backgroundColor = "#f25d8e";
         if (confirm("是否同时检测是否为自己粉丝？该操作会很慢！")) {
             dirtyUidList = lastUidList.slice(0, lastUidList.length);
+            infoText.innerText = "正在进行同步……页面位置：0";
+            infoPanel.style.display = "";
             syncFans(0);
         }
-        if (confirm("下载转发列表？")) {
-            makeCsv();
-        }
-        csvString = "UID,用户,是否粉丝";
-        alert("准备完成了。");
+        alert("准备完成了。如果选择了同步粉丝请等待同步完成。");
     }
 
     function makeCsv(){
+        csvString = "UID,用户,是否粉丝";
         var csvContent = "\ufeff";
         for (var i = 0; i < uidList.length; i++) {
             csvString = csvString + "\n" + uidList[i] + "," + userList[i] + "," + isFans[i];
